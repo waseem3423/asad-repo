@@ -104,6 +104,9 @@ export const computeAnimalStatus = (
     case ReproEventType.DRY_OFF:
       return { status: AnimalStatus.DRY };
 
+    case ReproEventType.ABORTION:
+      return { status: AnimalStatus.ACTIVE };
+
     default:
       return { status: AnimalStatus.ACTIVE };
   }

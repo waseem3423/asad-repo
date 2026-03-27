@@ -16,7 +16,8 @@ export enum ReproEventType {
   PREGNANCY_CHECK = 'Pregnancy Check',
   CALVING = 'Calving',
   DRY_OFF = 'Dry Off',
-  PROTOCOL_STEP = 'Protocol Step'
+  PROTOCOL_STEP = 'Protocol Step',
+  ABORTION = 'Abortion'
 }
 
 export enum HealthEventType {

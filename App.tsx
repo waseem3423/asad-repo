@@ -1526,6 +1526,7 @@ function MainApp({ user, onLogout }: any) {
                               <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm border inline-block w-fit ${
                                 event.type === ReproEventType.INSEMINATION ? 'bg-blue-50 text-blue-600 border-blue-100' : 
                                 event.type === ReproEventType.PREGNANCY_CHECK ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                event.type === ReproEventType.ABORTION ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                 'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
                                 {event.type}
