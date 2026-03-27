@@ -260,6 +260,7 @@ function MainApp({ user, onLogout }: any) {
   const [historyMonth, setHistoryMonth] = useState('');
   // Selected protocol for drill-down view (protocol list -> protocol detail)
   const [selectedProtocolId, setSelectedProtocolId] = useState<string | null>(null);
+  const [selectedHistoryProtocolId, setSelectedHistoryProtocolId] = useState<string | null>(null);
   // Group management in settings
   const [newGroupName, setNewGroupName] = useState('');
   // Dashboard status filter navigation
@@ -1426,7 +1427,10 @@ function MainApp({ user, onLogout }: any) {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">From Date</label>
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">From Date</label>
+                      <button onClick={() => { const today = new Date().toISOString().split('T')[0]; setReproDateStart(today); setReproDateEnd(today); }} className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest">Today</button>
+                    </div>
                     <input 
                       type="date"
                       className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-black shadow-inner outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -1652,7 +1656,10 @@ function MainApp({ user, onLogout }: any) {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">From Date</label>
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">From Date</label>
+                      <button onClick={() => { const today = new Date().toISOString().split('T')[0]; setHealthDateStart(today); setHealthDateEnd(today); }} className="text-[9px] font-black text-rose-600 hover:text-rose-700 uppercase tracking-widest">Today</button>
+                    </div>
                     <input 
                       type="date"
                       className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-black shadow-inner outline-none focus:ring-2 focus:ring-rose-500/20"
@@ -2115,12 +2122,21 @@ function MainApp({ user, onLogout }: any) {
                     const protocolEnrollments = enrollments.filter(e => e.status === 'Active' && e.templateId === selectedProtocolId);
                     return (
                       <div className="space-y-6">
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-center gap-4">
-                          <Layers className="w-6 h-6 text-amber-600" />
-                          <div>
-                            <h5 className="font-black text-slate-800 text-lg">{template.name}</h5>
-                            <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest">{protocolEnrollments.length} Animals Enrolled — {template.steps.length} Steps</p>
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <Layers className="w-6 h-6 text-amber-600" />
+                            <div>
+                              <h5 className="font-black text-slate-800 text-lg">{template.name}</h5>
+                              <p className="text-[10px] text-amber-600 font-black uppercase tracking-widest">{protocolEnrollments.length} Animals Enrolled — {template.steps.length} Steps</p>
+                            </div>
                           </div>
+                          <button 
+                            onClick={() => generateProtocolListReport(protocolEnrollments, protocols, animals, settings)}
+                            className="flex items-center gap-2 bg-white text-slate-700 border border-amber-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-colors shadow-sm"
+                            title="Print this protocol's active list"
+                          >
+                            <Printer className="w-4 h-4 text-amber-600" /> Print List
+                          </button>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           {protocolEnrollments.map(enrollment => {
@@ -2235,38 +2251,133 @@ function MainApp({ user, onLogout }: any) {
                       {historyMonth && <button onClick={() => setHistoryMonth('')} className="text-xs text-slate-400 hover:text-slate-600 font-black">Clear</button>}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {enrollments.filter(e => e.status !== 'Active').filter(e => !historyMonth || e.startDate.startsWith(historyMonth)).map(enrollment => {
-                      const animal = animals.find(a => a.id === enrollment.animalId);
-                      const template = protocols.find(t => t.id === enrollment.templateId);
-                      const progress = template ? (enrollment.completedStepIndices.length / template.steps.length) * 100 : 0;
+
+                  {!selectedHistoryProtocolId ? (
+                    // === HISTORY LIST VIEW (grouped by template) ===
+                    (() => {
+                      const historyEnrollments = enrollments.filter(e => e.status !== 'Active').filter(e => !historyMonth || e.startDate.startsWith(historyMonth));
+                      if (historyEnrollments.length === 0) {
+                        return (
+                          <div className="bg-white p-20 rounded-[4rem] text-center border border-slate-100">
+                            <History className="w-20 h-20 text-slate-100 mx-auto mb-6" />
+                            <p className="text-lg font-black text-slate-400 uppercase tracking-widest">No completed protocols</p>
+                          </div>
+                        );
+                      }
+                      
+                      const grouped: Record<string, { template: typeof protocols[0]; enrollments: typeof historyEnrollments }> = {};
+                      historyEnrollments.forEach(enr => {
+                        const template = protocols.find(t => t.id === enr.templateId);
+                        if (!template) return;
+                        if (!grouped[enr.templateId]) {
+                          grouped[enr.templateId] = { template, enrollments: [] };
+                        }
+                        grouped[enr.templateId].enrollments.push(enr);
+                      });
+
                       return (
-                        <div key={enrollment.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400"><History className="w-6 h-6" /></div>
-                              <div>
-                                <h5 className="font-black text-slate-800 text-lg">{animal?.tag || 'Unk'}</h5>
-                                <p className="text-xs text-slate-400 font-black uppercase tracking-[0.2em]">{template?.name || 'Protocol'}</p>
-                                <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Started: {enrollment.startDate}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {Object.entries(grouped).map(([templateId, group]) => (
+                            <div
+                              key={templateId}
+                              className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                              onClick={() => setSelectedHistoryProtocolId(templateId)}
+                            >
+                              <div className="flex items-start justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-inner">
+                                    <History className="w-7 h-7" />
+                                  </div>
+                                  <div>
+                                    <h5 className="font-black text-slate-800 text-xl group-hover:text-blue-600 transition-colors">{group.template.name}</h5>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{group.template.steps.length} Steps</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-3xl font-black text-slate-600">{group.enrollments.length}</p>
+                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Records</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 group-hover:text-blue-600 transition-colors mt-6">
+                                <span>Click to view history</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
                               </div>
                             </div>
-                            <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${enrollment.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : enrollment.status === 'Archived' ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-600'}`}>{enrollment.status}</span>
-                          </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-4">
-                            <div className="h-full bg-gradient-to-r from-slate-400 to-slate-600 transition-all" style={{ width: `${progress}%` }} />
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-2">{enrollment.completedStepIndices.length}/{template?.steps.length || 0} Steps Completed — {Math.round(progress)}%</p>
+                          ))}
                         </div>
                       );
-                    })}
-                    {enrollments.filter(e => e.status !== 'Active').length === 0 && (
-                      <div className="col-span-2 py-16 text-center">
-                        <History className="w-16 h-16 text-slate-100 mx-auto mb-4" />
-                        <p className="text-sm text-slate-400 font-black uppercase tracking-widest">No completed protocols yet</p>
-                      </div>
-                    )}
-                  </div>
+                    })()
+                  ) : (
+                    // === PROTOCOL HISTORY DETAIL VIEW ===
+                    (() => {
+                      const template = protocols.find(t => t.id === selectedHistoryProtocolId);
+                      if (!template) return null;
+                      const protocolEnrollments = enrollments.filter(e => e.status !== 'Active' && e.templateId === selectedHistoryProtocolId).filter(e => !historyMonth || e.startDate.startsWith(historyMonth));
+
+                      return (
+                        <div className="space-y-6">
+                          <div className="bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <History className="w-6 h-6 text-slate-500" />
+                              <div>
+                                <h5 className="font-black text-slate-800 text-lg">{template.name}</h5>
+                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{protocolEnrollments.length} Historical Records</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => generateProtocolListReport(protocolEnrollments, protocols, animals, settings)}
+                                className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm"
+                                title="Print this protocol's history"
+                              >
+                                <Printer className="w-4 h-4 text-slate-500" /> Print List
+                              </button>
+                              <button
+                                onClick={() => setSelectedHistoryProtocolId(null)}
+                                className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm"
+                              >
+                                ← Back
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {protocolEnrollments.map(enrollment => {
+                              const animal = animals.find(a => a.id === enrollment.animalId);
+                              const progress = (enrollment.completedStepIndices.length / template.steps.length) * 100;
+                              return (
+                                <div key={enrollment.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                                  <div className="flex items-start justify-between mb-6">
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-black text-lg border border-slate-100">
+                                        {(animal?.tag || '??').slice(-2)}
+                                      </div>
+                                      <div>
+                                        <h5 className="font-black text-slate-800 text-xl">{animal?.tag || 'Unknown'}</h5>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Started: {enrollment.startDate}</p>
+                                      </div>
+                                    </div>
+                                    <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${enrollment.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                                      {enrollment.status}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-3 mb-4">
+                                    <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                      <span>Progress: {enrollment.completedStepIndices.length}/{template.steps.length} steps</span>
+                                      <span>{Math.round(progress)}%</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                      <div className="h-full bg-slate-400 transition-all" style={{ width: `${progress}%` }}></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
               )}
 
