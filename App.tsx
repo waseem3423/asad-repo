@@ -2200,14 +2200,15 @@ function MainApp({ user, onLogout }: any) {
                                               const isFinished = newCompleted.length === template.steps.length;
                                               updateEnrollment({ ...enrollment, completedStepIndices: newCompleted, status: isFinished ? 'Completed' : 'Active' });
                                               if (step.isAI && animal) {
-                                                addReproEvent({
-                                                  id: Math.random().toString(36).substr(2, 9),
-                                                  animalId: animal.id,
+                                                setEditingReproId(null);
+                                                setNewRepro({
                                                   type: ReproEventType.INSEMINATION,
                                                   date: stepDate,
-                                                  details: `Auto: ${step.action} Step`,
-                                                  protocolId: enrollment.id
-                                                } as ReproductionEvent);
+                                                  animalId: animal.id,
+                                                  details: `Protocol Step: ${step.action}`
+                                                });
+                                                setReproAnimalSearch(animal.tag);
+                                                setIsReproFormOpen(true);
                                               }
                                             }}
                                             className="flex-shrink-0 px-2.5 py-1 bg-amber-600 text-white rounded-lg font-black text-[8px] uppercase tracking-wider hover:bg-amber-700 transition-all"
