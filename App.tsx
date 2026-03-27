@@ -1588,7 +1588,7 @@ function MainApp({ user, onLogout }: any) {
                     <Printer className="w-5 h-5" /> Print PDF
                   </button>
                   <button 
-                    onClick={() => { setEditingHealthId(null); setNewHealth({ type: HealthEventType.ILLNESS, date: new Date().toISOString().split('T')[0] }); setIsHealthFormOpen(true); }}
+                    onClick={() => { setEditingHealthId(null); setNewHealth({ type: HealthEventType.ILLNESS, date: new Date().toISOString().split('T')[0], treatments: [{name: '', dose: ''}] }); setIsHealthFormOpen(true); }}
                     className="flex-1 sm:flex-none flex items-center justify-center gap-3 bg-rose-600 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-xl shadow-rose-100"
                   >
                     <Plus className="w-5 h-5" /> Add Discovery
@@ -1723,7 +1723,7 @@ function MainApp({ user, onLogout }: any) {
                            </button>
                            <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 flex flex-col p-2">
                              <button 
-                               onClick={() => { setEditingHealthId(event.id); setNewHealth(event); const anim = animals.find((x: any) => x.id === event.animalId); if(anim) setHealthAnimalSearch(anim.tag); setIsHealthFormOpen(true); }}
+                               onClick={() => { setEditingHealthId(event.id); const toEdit = {...event}; if (!toEdit.treatments) { if (toEdit.medication || toEdit.dosage) { toEdit.treatments = [{name: toEdit.medication || '', dose: toEdit.dosage || ''}]; } else { toEdit.treatments = [{name: '', dose: ''}]; } } setNewHealth(toEdit); const anim = animals.find((x: any) => x.id === event.animalId); if(anim) setHealthAnimalSearch(anim.tag); setIsHealthFormOpen(true); }}
                                className="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 w-full text-left transition-colors"
                              >
                                <Edit2 className="w-4 h-4 text-blue-500" /> Edit Record
@@ -1793,12 +1793,31 @@ function MainApp({ user, onLogout }: any) {
                          );
                        })()}
                        <div className="space-y-4">
-                         {event.medication && (
-                           <div className="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
-                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Prescription</p>
-                             <p className="text-xs font-black text-slate-800">{event.medication}</p>
-                             <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Dose: {event.dosage || 'N/A'}</p>
-                           </div>
+                         {(event.treatments && event.treatments.length > 0 && event.treatments[0].name) ? (
+                            <div className="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 flex flex-col gap-3">
+                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Treatments & Injections</p>
+                              <div className="space-y-2">
+                                {event.treatments.map((t, i) => (
+                                  <div key={i} className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-100/50 shadow-sm transition-all hover:shadow-md">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
+                                        <Syringe className="w-3 h-3 text-blue-500" />
+                                      </div>
+                                      <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{t.name || 'Unnamed'}</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md uppercase border border-slate-100 tracking-widest">
+                                      {t.dose || 'N/A'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                         ) : event.medication && (
+                            <div className="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Prescription</p>
+                              <p className="text-xs font-black text-slate-800">{event.medication}</p>
+                              <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Dose: {event.dosage || 'N/A'}</p>
+                            </div>
                          )}
                          {event.technician && (
                            <div className="flex items-center gap-2 px-1">
@@ -2856,7 +2875,7 @@ function MainApp({ user, onLogout }: any) {
                 Log Repro Event
               </button>
               <button 
-                onClick={() => { setEditingHealthId(null); setNewHealth({ type: HealthEventType.ILLNESS, date: new Date().toISOString().split('T')[0], animalId: selectedAnimal.id }); setHealthAnimalSearch(selectedAnimal.tag); setIsHealthFormOpen(true); setSelectedAnimal(null); }}
+                onClick={() => { setEditingHealthId(null); setNewHealth({ type: HealthEventType.ILLNESS, date: new Date().toISOString().split('T')[0], animalId: selectedAnimal.id, treatments: [{name: '', dose: ''}] }); setHealthAnimalSearch(selectedAnimal.tag); setIsHealthFormOpen(true); setSelectedAnimal(null); }}
                 className="flex-1 py-4 bg-rose-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-700 transition-all shadow-xl shadow-rose-100"
               >
                 Log Health Issue
@@ -3188,9 +3207,49 @@ function MainApp({ user, onLogout }: any) {
             <input type="date" className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-black shadow-inner" value={newHealth.date || ''} onChange={e => setNewHealth({...newHealth, date: e.target.value})} />
           </div>
           <input className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-black shadow-inner" placeholder="Technician / Veterinarian" value={newHealth.technician || ''} onChange={e => setNewHealth({...newHealth, technician: e.target.value})} />
-          <div className="grid grid-cols-2 gap-4">
-             <input className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-black shadow-inner" placeholder="Medication" value={newHealth.medication || ''} onChange={e => setNewHealth({...newHealth, medication: e.target.value})} />
-             <input className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm font-black shadow-inner" placeholder="Dosage" value={newHealth.dosage || ''} onChange={e => setNewHealth({...newHealth, dosage: e.target.value})} />
+          <div className="space-y-3 p-4 bg-white border border-slate-100 rounded-[1.5rem] shadow-sm">
+            <div className="flex items-center justify-between pl-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Treatments & Injections</label>
+              <button 
+                type="button" 
+                onClick={() => {
+                  const currentTreatments = newHealth.treatments || [];
+                  setNewHealth({...newHealth, treatments: [...currentTreatments, {name: '', dose: ''}]});
+                }}
+                className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl uppercase tracking-widest hover:bg-blue-100 transition-colors"
+              >
+                + Add Medicine
+              </button>
+            </div>
+            {(!newHealth.treatments || newHealth.treatments.length === 0) && (
+               <div className="grid grid-cols-2 gap-4">
+                 <input className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold shadow-inner" placeholder="Medication (Optional)" value={newHealth.medication || ''} onChange={e => setNewHealth({...newHealth, medication: e.target.value})} />
+                 <input className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold shadow-inner" placeholder="Dosage" value={newHealth.dosage || ''} onChange={e => setNewHealth({...newHealth, dosage: e.target.value})} />
+               </div>
+            )}
+            {newHealth.treatments?.map((treatment: any, idx: number) => (
+              <div key={idx} className="flex gap-2 relative group">
+                 <input className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold shadow-inner focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="Injection / Medication Name" value={treatment.name} onChange={e => {
+                   const t = [...(newHealth.treatments || [])];
+                   t[idx].name = e.target.value;
+                   setNewHealth({...newHealth, treatments: t});
+                 }} />
+                 <input className="w-1/3 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold shadow-inner focus:ring-2 focus:ring-blue-500/20 outline-none" placeholder="Dosage (e.g. 5ml)" value={treatment.dose} onChange={e => {
+                   const t = [...(newHealth.treatments || [])];
+                   t[idx].dose = e.target.value;
+                   setNewHealth({...newHealth, treatments: t});
+                 }} />
+                 {(newHealth.treatments && newHealth.treatments.length > 1) && (
+                   <button type="button" onClick={() => {
+                     const t = [...(newHealth.treatments || [])];
+                     t.splice(idx, 1);
+                     setNewHealth({...newHealth, treatments: t});
+                   }} className="w-10 flex-shrink-0 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                     <Trash2 className="w-4 h-4" />
+                   </button>
+                 )}
+              </div>
+            ))}
           </div>
           <textarea className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black shadow-inner" rows={3} placeholder="Clinical symptoms..." value={newHealth.details || ''} onChange={e => setNewHealth({...newHealth, details: e.target.value})} />
           <div className="space-y-2">

@@ -117,6 +117,7 @@ export interface HealthEvent {
   details: string;
   medication?: string;
   dosage?: string;
+  treatments?: { name: string; dose: string }[];
   nextDue?: string;
   treatmentDays?: number; // How many days to treat
   numberOfDoses?: number; // Multi-dose: total number of injections
