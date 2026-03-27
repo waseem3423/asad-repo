@@ -765,8 +765,8 @@ function MainApp({ user, onLogout }: any) {
               <Activity className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tighter">AgroVet<span className="text-blue-600">Pro</span></h1>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest -mt-1">Livestock OS</p>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tighter">Asad's<span className="text-blue-600">Farm</span></h1>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest -mt-1">Management</p>
             </div>
           </div>
 
@@ -3410,8 +3410,8 @@ export default function App() {
               <Activity className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tighter">AgroVet<span className="text-blue-600">Pro</span></h1>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Livestock Cloud OS</p>
+              <h1 className="text-3xl font-black text-slate-800 tracking-tighter">Asad's<span className="text-blue-600">Farm</span></h1>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Management</p>
             </div>
           </div>
           
